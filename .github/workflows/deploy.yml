@@ -1,0 +1,39 @@
+name: Compile WASM and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Emscripten (WASM Compiler)
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Compile C++ to WebAssembly
+        run: |
+          mkdir -p wasm
+          emcc cpp/ExpenseTracker.cpp -o wasm/expense.js -s MODULARIZE=1 -s EXPORT_NAME="createExpenseModule" --bind -O3
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
